@@ -16,14 +16,34 @@ class Trustpilot_Admin {
      * Add admin menu items
      */
     public function add_admin_menu() {
-        // Add Business submenu under Trustpilot Businesses
+        // Main menu (defaults to All Businesses)
+        add_menu_page(
+            'All Businesses',
+            'Trustpilot Review Fetcher',
+            'manage_options',
+            'edit.php?post_type=tp_businesses',
+            null,
+            'dashicons-star-filled',
+            30
+        );
+
+        // Add Business submenu
         add_submenu_page(
             'edit.php?post_type=tp_businesses',
-            'Add Business',
-            'Add Business',
+            'Add a Business',
+            'Add a Business',
             'manage_options',
             'add-trustpilot-business',
             array($this, 'add_business_page')
+        );
+
+        // All Reviews submenu
+        add_submenu_page(
+            'edit.php?post_type=tp_businesses',
+            'All Reviews',
+            'All Reviews',
+            'manage_options',
+            'edit.php?post_type=tp_reviews'
         );
 
         // Settings page

@@ -2,7 +2,7 @@
 
 A WordPress plugin that scrapes Trustpilot reviews and displays them on your WordPress site using custom post types and taxonomies.
 
-## Version: 1.0.4
+## Version: 1.0.5
 
 ## Features
 
@@ -18,10 +18,7 @@ A WordPress plugin that scrapes Trustpilot reviews and displays them on your Wor
 
 ## Installation
 
-1. Upload the plugin files to `/wp-content/plugins/edible-trustpilot-fetcher/`
-2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Go to **Trustpilot Businesses > Settings** to configure scraping options
-4. Add your first business via **Trustpilot Businesses > Add Business**
+Download [here](https://github.com/ediblesites/edible-trustpilot-fetcher/archive/refs/heads/master.zip), proceed as usual.
 
 ## Updates
 
@@ -46,7 +43,6 @@ GitHub Plugin URI: ediblesites/edible-trustpilot-fetcher
 ### Adding a Business
 
 1. Navigate to **Trustpilot Businesses > Add Business**
-2. Enter a business name (will be updated with actual name from Trustpilot)
 3. Enter the Trustpilot review URL (e.g., `https://www.trustpilot.com/review/example.com`)
 4. Click "Add Business & Start Scraping"
 
@@ -55,15 +51,7 @@ The plugin will:
 - Create a business post with metadata
 - Extract and create review posts (limited by your review limit setting)
 - Link reviews to the business via taxonomy
-
-### Admin Dashboard
-
-The dashboard (**Trustpilot Businesses > Dashboard**) shows:
-- Total businesses and reviews
-- Current review limit setting
-- Last scraped time for each business
-- Next scheduled scrape time
-- Manual scrape trigger button
+- Periodically check Trustpilot for new reviews
 
 ### Settings
 
@@ -92,45 +80,7 @@ Configure scraping behavior in **Trustpilot Businesses > Settings**:
 4. **Review Creation** → Create review posts with taxonomy links
 5. **Scheduled Re-scraping** → Update existing businesses based on frequency
 
-### Key Classes
-
-- `Trustpilot_CPT`: Custom post type registration and management
-- `Trustpilot_Scraper`: Handles HTTP requests and data extraction
-- `Trustpilot_Business_Manager`: Orchestrates business and review creation
-- `Trustpilot_Admin`: Admin interface and settings
-- `Trustpilot_API`: REST API endpoints
-
 ## API Endpoints
-
-### Authentication
-All endpoints require WordPress REST API authentication using username and application password.
-
-### Endpoints
-
-- `POST /wp-json/trustpilot/v1/businesses` - Add a new business
-- `DELETE /wp-json/trustpilot/v1/businesses` - Delete a business by URL
-- `GET /wp-json/trustpilot/v1/businesses` - List all businesses
-- `GET /wp-json/trustpilot/v1/reviews` - List reviews (with optional business filter)
-
-### Example Usage
-
-```bash
-# Add a business
-curl -X POST https://yoursite.com/wp-json/trustpilot/v1/businesses \
-  -H "Content-Type: application/json" \
-  -u "username:app_password" \
-  -d '{
-    "title": "Example Business",
-    "trustpilot_url": "https://www.trustpilot.com/review/example.com"
-  }'
-
-# Delete a business
-curl -X DELETE https://yoursite.com/wp-json/trustpilot/v1/businesses \
-  -u "username:app_password" \
-  -d '{
-    "trustpilot_url": "https://www.trustpilot.com/review/example.com"
-  }'
-```
 
 ## Scraping Behavior
 
