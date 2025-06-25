@@ -11,7 +11,6 @@ class Trustpilot_Business_Manager {
     // Constants
     private const SECONDS_PER_HOUR = 3600;
     private const DEFAULT_REVIEW_LIMIT = 5;
-    private const DEFAULT_SCRAPING_FREQUENCY = 24;
 
     public function __construct() {
         $this->scraper = new Trustpilot_Scraper();
@@ -41,7 +40,7 @@ class Trustpilot_Business_Manager {
             return true;
         }
 
-        $scraping_frequency_hours = get_option('trustpilot_scraping_frequency', self::DEFAULT_SCRAPING_FREQUENCY);
+        $scraping_frequency_hours = get_option('trustpilot_scraping_frequency', EDIBLE_TP_DEFAULT_SCRAPING_FREQUENCY);
         $scraping_frequency_seconds = $scraping_frequency_hours * self::SECONDS_PER_HOUR;
         $current_time = current_time('timestamp');
         
@@ -300,7 +299,7 @@ class Trustpilot_Business_Manager {
         $results['total_businesses'] = count($active_businesses);
 
         // Get scraping frequency setting
-        $scraping_frequency_hours = get_option('trustpilot_scraping_frequency', self::DEFAULT_SCRAPING_FREQUENCY);
+        $scraping_frequency_hours = get_option('trustpilot_scraping_frequency', EDIBLE_TP_DEFAULT_SCRAPING_FREQUENCY);
         $scraping_frequency_seconds = $scraping_frequency_hours * self::SECONDS_PER_HOUR;
         $current_time = current_time('timestamp');
 
@@ -655,7 +654,7 @@ class Trustpilot_Business_Manager {
             );
         }
 
-        $scraping_frequency_hours = get_option('trustpilot_scraping_frequency', self::DEFAULT_SCRAPING_FREQUENCY);
+        $scraping_frequency_hours = get_option('trustpilot_scraping_frequency', EDIBLE_TP_DEFAULT_SCRAPING_FREQUENCY);
         $scraping_frequency_seconds = $scraping_frequency_hours * self::SECONDS_PER_HOUR;
         $last_scraped_timestamp = strtotime($last_scraped);
         $next_scrape_timestamp = $last_scraped_timestamp + $scraping_frequency_seconds;
