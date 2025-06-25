@@ -1,22 +1,23 @@
-# Secrets configuration file
+# Composer
+/vendor/
+composer.phar
+composer.lock
+
+# Secrets
 secrets.php
 
-# WordPress core files (if any)
+# WordPress
 wp-config.php
-
-# Log files
-*.log
-
-# Temporary files
-*.tmp
-*.temp
-
-# IDE files
-.vscode/
-.idea/
-.cursor/
-*.swp
-*.swo
+wp-content/uploads/
+wp-content/cache/
+wp-content/backup-db/
+wp-content/backups/
+wp-content/blogs.dir/
+wp-content/upgrade/
+wp-content/uploads/
+wp-content/mu-plugins/
+wp-content/wp-cache-config.php
+wp-content/plugins/hello.php
 
 # OS generated files
 .DS_Store
@@ -25,4 +26,22 @@ wp-config.php
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.db 
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Cursor files
+.cursor/ 

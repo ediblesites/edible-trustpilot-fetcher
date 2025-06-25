@@ -56,6 +56,16 @@ class Trustpilot_Admin {
             'trustpilot-settings',
             array($this, 'settings_page')
         );
+
+        // Action Scheduler Status page
+        add_submenu_page(
+            'edit.php?post_type=tp_businesses',
+            'Scraping Status',
+            'Scraping Status',
+            'manage_options',
+            'trustpilot-scraping-status',
+            array($this, 'scraping_status_page')
+        );
     }
 
     /**
@@ -179,6 +189,142 @@ class Trustpilot_Admin {
             </form>
         </div>
         <?php
+    }
+
+    /**
+     * Scraping Status page
+     */
+    public function scraping_status_page() {
+        if (!class_exists('ActionScheduler_Store')) {
+            echo '<div class="wrap"><h1>Scraping Status</h1><p>Action Scheduler is not available.</p></div>';
+            return;
+        }
+
+        // Handle manual queue processing
+        if (isset($_POST['process_queue']) && wp_verify_nonce($_POST['_wpnonce'], 'process_queue')) {
+            $this->process_action_scheduler_queue();
+        }
+
+        $store = ActionScheduler_Store::instance();
+        $pending_actions = $store->query_actions(array(
+            'group' => 'trustpilot-scraping',
+            'status' => ActionScheduler_Store::STATUS_PENDING,
+            'per_page' => 50
+        ));
+
+        $failed_actions = $store->query_actions(array(
+            'group' => 'trustpilot-scraping',
+            'status' => ActionScheduler_Store::STATUS_FAILED,
+            'per_page' => 50
+        ));
+
+        ?>
+        <div class="wrap">
+            <h1>Scraping Status</h1>
+            
+            <div class="card">
+                <h2>Action Scheduler Status</h2>
+                <p><strong>Pending Actions:</strong> <?php echo count($pending_actions); ?></p>
+                <p><strong>Failed Actions:</strong> <?php echo count($failed_actions); ?></p>
+                
+                <form method="post">
+                    <?php wp_nonce_field('process_queue'); ?>
+                    <input type="submit" name="process_queue" class="button button-primary" value="Process Queue Now">
+                </form>
+            </div>
+
+            <?php if (!empty($pending_actions)): ?>
+            <div class="card">
+                <h2>Pending Scraping Jobs</h2>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Business ID</th>
+                            <th>Scheduled For</th>
+                            <th>Attempts</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($pending_actions as $action_id): 
+                            $action = $store->fetch_action($action_id);
+                            $args = $action->get_args();
+                            $business_id = $args[0] ?? 'Unknown';
+                            $business_title = get_the_title($business_id);
+                        ?>
+                        <tr>
+                            <td><?php echo esc_html($action->get_hook()); ?></td>
+                            <td>
+                                <?php echo esc_html($business_id); ?>
+                                <?php if ($business_title && $business_title !== 'Auto Draft'): ?>
+                                    - <?php echo esc_html($business_title); ?>
+                                <?php endif; ?>
+                            </td>
+                            <td><?php echo esc_html(date('Y-m-d H:i:s', $action->get_schedule()->get_date()->getTimestamp())); ?></td>
+                            <td><?php echo esc_html($action->get_attempt_count()); ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+
+            <?php if (!empty($failed_actions)): ?>
+            <div class="card">
+                <h2>Failed Scraping Jobs</h2>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Business ID</th>
+                            <th>Last Attempt</th>
+                            <th>Attempts</th>
+                            <th>Error</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($failed_actions as $action_id): 
+                            $action = $store->fetch_action($action_id);
+                            $args = $action->get_args();
+                            $business_id = $args[0] ?? 'Unknown';
+                            $business_title = get_the_title($business_id);
+                            $logs = $action->get_logs();
+                            $last_log = end($logs);
+                            $error_message = $last_log ? $last_log->get_message() : 'Unknown error';
+                        ?>
+                        <tr>
+                            <td><?php echo esc_html($action->get_hook()); ?></td>
+                            <td>
+                                <?php echo esc_html($business_id); ?>
+                                <?php if ($business_title && $business_title !== 'Auto Draft'): ?>
+                                    - <?php echo esc_html($business_title); ?>
+                                <?php endif; ?>
+                            </td>
+                            <td><?php echo esc_html(date('Y-m-d H:i:s', $action->get_schedule()->get_date()->getTimestamp())); ?></td>
+                            <td><?php echo esc_html($action->get_attempt_count()); ?></td>
+                            <td><?php echo esc_html($error_message); ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
+
+    /**
+     * Process Action Scheduler queue manually
+     */
+    private function process_action_scheduler_queue() {
+        if (!class_exists('ActionScheduler_QueueRunner')) {
+            return;
+        }
+
+        $runner = ActionScheduler_QueueRunner::instance();
+        $processed = $runner->run(50); // Process up to 50 actions
+
+        echo '<div class="notice notice-success"><p>Processed ' . $processed . ' actions from the queue.</p></div>';
     }
 
     /**

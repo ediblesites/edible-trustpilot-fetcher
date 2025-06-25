@@ -28,6 +28,23 @@ define('EDIBLE_TP_PLUGIN_PATH', plugin_dir_path(__FILE__));
 define('EDIBLE_TP_DEFAULT_SCRAPING_FREQUENCY', 72);
 define('EDIBLE_TP_DEFAULT_REVIEW_LIMIT', 5);
 
+// Load Composer autoloader
+if (file_exists(EDIBLE_TP_PLUGIN_PATH . 'vendor/autoload.php')) {
+    require_once EDIBLE_TP_PLUGIN_PATH . 'vendor/autoload.php';
+}
+
+// Load Action Scheduler
+if (file_exists(EDIBLE_TP_PLUGIN_PATH . 'vendor/woocommerce/action-scheduler/action-scheduler.php')) {
+    require_once EDIBLE_TP_PLUGIN_PATH . 'vendor/woocommerce/action-scheduler/action-scheduler.php';
+}
+
+// Initialize Action Scheduler
+if (class_exists('ActionScheduler_Versions')) {
+    add_action('plugins_loaded', function() {
+        ActionScheduler_Versions::initialize_latest_version();
+    });
+}
+
 // Includes
 require_once EDIBLE_TP_PLUGIN_PATH . 'includes/class-cpt.php';
 require_once EDIBLE_TP_PLUGIN_PATH . 'includes/class-scraper.php';

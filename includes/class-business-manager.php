@@ -280,94 +280,60 @@ class Trustpilot_Business_Manager {
     }
 
     /**
-     * Scrape all active businesses that are due for scraping
+     * Scrape all active businesses
      * 
      * @return array Results of scraping operation
      */
     public function scrape_all_active_businesses() {
         $results = array(
-            'total_businesses' => 0,
-            'due_for_scraping' => 0,
-            'successful_scrapes' => 0,
-            'failed_scrapes' => 0,
-            'skipped_scrapes' => 0,
+            'success' => false,
+            'message' => '',
+            'businesses_scraped' => 0,
+            'total_reviews' => 0,
             'errors' => array()
         );
 
-        // Get only published (active) businesses
-        $active_businesses = Trustpilot_CPT::get_active_businesses();
-        $results['total_businesses'] = count($active_businesses);
+        try {
+            $businesses = get_posts(array(
+                'post_type' => 'tp_businesses',
+                'post_status' => 'publish',
+                'numberposts' => -1,
+                'fields' => 'ids'
+            ));
 
-        // Get scraping frequency setting
-        $scraping_frequency_hours = get_option('trustpilot_scraping_frequency', EDIBLE_TP_DEFAULT_SCRAPING_FREQUENCY);
-        $scraping_frequency_seconds = $scraping_frequency_hours * self::SECONDS_PER_HOUR;
-        $current_time = current_time('timestamp');
-
-        foreach ($active_businesses as $business) {
-            $business_url = get_post_meta($business->ID, 'business_url', true);
-            
-            if (empty($business_url)) {
-                $results['errors'][] = "Business ID {$business->ID} has no Trustpilot URL";
-                $results['failed_scrapes']++;
-                continue;
+            if (empty($businesses)) {
+                $results['message'] = 'No active businesses found to scrape';
+                return $results;
             }
 
-            // Check if business is due for scraping
-            $last_scraped = get_post_meta($business->ID, 'last_scraped', true);
-            $time_since_last_scrape = 0;
-            
-            if ($last_scraped) {
-                $last_scraped_timestamp = strtotime($last_scraped);
-                $time_since_last_scrape = $current_time - $last_scraped_timestamp;
+            foreach ($businesses as $business_id) {
+                try {
+                    $business_result = $this->process_business_data($business_id);
+                    
+                    if ($business_result['success']) {
+                        $results['businesses_scraped']++;
+                        $results['total_reviews'] += $business_result['reviews_queued'];
+                    } else {
+                        $results['errors'][] = "Business {$business_id}: " . $business_result['message'];
+                    }
+                } catch (Exception $e) {
+                    $results['errors'][] = "Business {$business_id}: " . $e->getMessage();
+                }
             }
 
-            // If business was scraped recently, skip it
-            if ($last_scraped && $time_since_last_scrape < $scraping_frequency_seconds) {
-                $hours_remaining = ceil(($scraping_frequency_seconds - $time_since_last_scrape) / self::SECONDS_PER_HOUR);
-                $results['skipped_scrapes']++;
-                $results['errors'][] = "Business '{$business->post_title}' skipped (scraped {$hours_remaining} hours ago, due in " . ceil($scraping_frequency_seconds / self::SECONDS_PER_HOUR) . " hours)";
-                continue;
-            }
-
-            $results['due_for_scraping']++;
-
-            // Scrape the business using the standalone scraper
-            $scrape_result = $this->scraper->scrape_business($business_url);
-            
-            if (is_wp_error($scrape_result)) {
-                $results['errors'][] = "Business '{$business->post_title}': " . $scrape_result->get_error_message();
-                $results['failed_scrapes']++;
+            if ($results['businesses_scraped'] > 0) {
+                $results['success'] = true;
+                $results['message'] = "Successfully scraped {$results['businesses_scraped']} businesses with {$results['total_reviews']} total reviews queued";
             } else {
-                // Update business with new data
-                $this->update_business_data($business->ID, $scrape_result);
-                
-                $results['successful_scrapes']++;
+                $results['message'] = 'No businesses were successfully scraped';
             }
+
+        } catch (Exception $e) {
+            $results['errors'][] = $e->getMessage();
+            $results['message'] = 'Error: ' . $e->getMessage();
         }
 
         return $results;
-    }
-
-    /**
-     * Scrape a single business by URL (respects frequency setting)
-     * 
-     * @param string $business_url Trustpilot URL to scrape
-     * @param bool $force_scrape Whether to ignore frequency setting
-     * @return array|WP_Error Business data or error
-     */
-    public function scrape_single_business($business_url, $force_scrape = false) {
-        // Find the business by URL
-        $business = $this->find_business_by_url($business_url);
-
-        if ($business) {
-            // Check frequency unless forced
-            $due_check = $this->is_business_due_for_scraping($business->ID, $force_scrape);
-            if (is_wp_error($due_check)) {
-                return $due_check;
-            }
-        }
-
-        return $this->scraper->scrape_business($business_url);
     }
 
     /**
@@ -520,90 +486,25 @@ class Trustpilot_Business_Manager {
                 throw new Exception('Failed to scrape business: ' . $scrape_result->get_error_message());
             }
 
-            // Extract business domain for taxonomy
-            $business_domain = $this->extract_business_domain($trustpilot_url);
-
-            // Create business post (title will be extracted from scraped data)
-            $post_id = $this->create_business_post('', $trustpilot_url, $scrape_result);
-            if (is_wp_error($post_id)) {
-                throw new Exception('Failed to create business post: ' . $post_id->get_error_message());
+            // Create the business post
+            $business_id = $this->create_business_post('', $trustpilot_url, $scrape_result);
+            
+            if (is_wp_error($business_id)) {
+                throw new Exception('Failed to create business post: ' . $business_id->get_error_message());
             }
 
-            $results['post_id'] = $post_id;
+            $results['post_id'] = $business_id;
 
-            // Create reviews from the same scraped data
-            $reviews_result = $this->create_reviews_from_data($business_domain, $scrape_result);
-            $results['reviews_scraped'] = $reviews_result['reviews_saved'];
+            // Process business data with existing scraped data (no double scraping)
+            $process_result = $this->process_business_data($business_id, $scrape_result);
             
-            if ($reviews_result['success']) {
+            if ($process_result['success']) {
                 $results['success'] = true;
-                $results['message'] = 'Business created and ' . $results['reviews_scraped'] . ' reviews scraped successfully';
+                $results['reviews_scraped'] = $process_result['reviews_queued'];
+                $results['message'] = "Business created successfully with {$results['reviews_scraped']} reviews queued for saving";
             } else {
-                $results['message'] = 'Business created but review creation failed: ' . $reviews_result['message'];
-            }
-
-        } catch (Exception $e) {
-            $results['errors'][] = $e->getMessage();
-            $results['message'] = 'Error: ' . $e->getMessage();
-        }
-
-        return $results;
-    }
-
-    /**
-     * Create reviews from the same scraped data
-     * 
-     * @param string $business_domain Business domain for taxonomy slug
-     * @param array $scrape_result Scraped business data
-     * @return array Results of review creation operation
-     */
-    public function create_reviews_from_data($business_domain, $scrape_result) {
-        $results = array(
-            'success' => false,
-            'message' => '',
-            'reviews_saved' => 0,
-            'errors' => array()
-        );
-
-        try {
-            $reviews = $scrape_result['reviews'] ?? array();
-            
-            if (empty($reviews)) {
-                $results['message'] = 'No reviews found to save';
-                return $results;
-            }
-
-            // Get the review limit from settings
-            $review_limit = get_option('trustpilot_review_limit', self::DEFAULT_REVIEW_LIMIT);
-            
-            // Limit the number of reviews to process
-            $reviews = array_slice($reviews, 0, $review_limit);
-            
-            $results['message'] = "Processing " . count($reviews) . " reviews (limited to {$review_limit})";
-
-            // Create taxonomy term
-            $term = $this->create_taxonomy_term($business_domain);
-            if (is_wp_error($term)) {
-                $results['message'] = 'Failed to create taxonomy term: ' . $term->get_error_message();
-                return $results;
-            }
-
-            // Create individual reviews
-            foreach ($reviews as $review_data) {
-                $review_id = $this->create_single_review($review_data, $term);
-                
-                if (is_wp_error($review_id)) {
-                    $results['errors'][] = 'Failed to save review: ' . $review_id->get_error_message();
-                } else {
-                    $results['reviews_saved']++;
-                }
-            }
-
-            if ($results['reviews_saved'] > 0) {
-                $results['success'] = true;
-                $results['message'] = "Successfully saved {$results['reviews_saved']} reviews (limited to {$review_limit})";
-            } else {
-                $results['message'] = 'No reviews were saved';
+                $results['message'] = 'Business created but processing failed: ' . $process_result['message'];
+                $results['errors'] = $process_result['errors'];
             }
 
         } catch (Exception $e) {
@@ -714,5 +615,259 @@ class Trustpilot_Business_Manager {
             'total_reviews' => $total_reviews,
             'businesses' => $business_stats
         );
+    }
+
+    /**
+     * Action Scheduler job wrapper for updating business data
+     * 
+     * @param int $business_id Business post ID
+     * @return array Results of operation
+     */
+    public static function update_business_job($business_id) {
+        try {
+            $business_manager = new self();
+            $result = $business_manager->process_business_data($business_id);
+            
+            // Log result
+            error_log("Trustpilot Update Business Result for Business {$business_id}: " . json_encode($result));
+            
+            return $result;
+        } catch (Exception $e) {
+            error_log("Trustpilot Update Business Error for Business {$business_id}: " . $e->getMessage());
+            throw $e; // Re-throw to trigger Action Scheduler retry
+        }
+    }
+
+    /**
+     * Action Scheduler job wrapper for saving a single review
+     * 
+     * @param int $business_id Business post ID
+     * @param array $review_data Review data to save
+     * @return array Results of save operation
+     */
+    public static function save_single_review_job($business_id, $review_data) {
+        error_log("Trustpilot Debug: Processing review job for business {$business_id}");
+        
+        try {
+            $business_manager = new self();
+            $result = $business_manager->save_single_review($business_id, $review_data);
+            
+            // Log result
+            error_log("Trustpilot Save Single Review Result for Business {$business_id}: " . json_encode($result));
+            
+            return $result;
+        } catch (Exception $e) {
+            error_log("Trustpilot Save Single Review Error for Business {$business_id}: " . $e->getMessage());
+            throw $e; // Re-throw to trigger Action Scheduler retry
+        }
+    }
+
+    /**
+     * Process business data (scrape, update metadata, queue reviews)
+     * Can be called with existing scraped data (creation) or scrape fresh data (updates)
+     * 
+     * @param int $business_id Business post ID
+     * @param array|null $scraped_data Pre-scraped data (optional)
+     * @return array Results of processing operation
+     */
+    public function process_business_data($business_id, $scraped_data = null) {
+        $results = array(
+            'success' => false,
+            'message' => '',
+            'business_id' => $business_id,
+            'reviews_queued' => 0,
+            'errors' => array()
+        );
+
+        try {
+            // Get the business post
+            $business = get_post($business_id);
+            if (!$business || $business->post_type !== 'tp_businesses') {
+                throw new Exception("Business with ID $business_id not found");
+            }
+
+            // Get the business URL
+            $business_url = get_post_meta($business_id, 'business_url', true);
+            if (!$business_url) {
+                throw new Exception("Business URL not found for business ID $business_id");
+            }
+
+            // Check frequency unless forced (only for updates, not creation)
+            if ($scraped_data === null) {
+                $due_check = $this->is_business_due_for_scraping($business_id, false);
+                if (is_wp_error($due_check)) {
+                    $results['message'] = $due_check->get_error_message();
+                return $results;
+                }
+            }
+
+            // Scrape data if not provided
+            if ($scraped_data === null) {
+                $scraped_data = $this->scraper->scrape_business($business_url);
+                
+                if (is_wp_error($scraped_data)) {
+                    throw new Exception('Failed to scrape business: ' . $scraped_data->get_error_message());
+                }
+            }
+
+            // Update business data
+            $this->update_business_data($business_id, $scraped_data);
+
+            // Extract business domain for taxonomy
+            $business_domain = $this->extract_business_domain($business_url);
+
+            // Create taxonomy term for new reviews
+            $term = $this->create_taxonomy_term($business_domain);
+
+            // Queue individual review jobs
+            if (!empty($scraped_data['reviews']) && is_array($scraped_data['reviews'])) {
+                error_log("Trustpilot Debug: Found " . count($scraped_data['reviews']) . " reviews to queue for business {$business_id}");
+                
+                foreach ($scraped_data['reviews'] as $index => $review) {
+                    error_log("Trustpilot Debug: Queuing review {$index} for business {$business_id}");
+                    
+                    as_enqueue_async_action(
+                        'trustpilot_save_review_action',
+                        array($business_id, $review),
+                        'trustpilot-scraping',
+                        array(
+                            'retry_count' => 3,
+                            'retry_delay' => 300 // 5 minutes
+                        )
+                    );
+                    $results['reviews_queued']++;
+                }
+                
+                error_log("Trustpilot Debug: Successfully queued {$results['reviews_queued']} review jobs for business {$business_id}");
+            } else {
+                error_log("Trustpilot Debug: No reviews found in scraped data for business {$business_id}");
+            }
+
+            $results['success'] = true;
+            $results['message'] = "Business '{$business->post_title}' processed with {$results['reviews_queued']} reviews queued for saving";
+
+        } catch (Exception $e) {
+            $results['errors'][] = $e->getMessage();
+            $results['message'] = 'Error: ' . $e->getMessage();
+        }
+
+        return $results;
+    }
+
+    /**
+     * Save a single review to WordPress
+     * 
+     * @param int $business_id Business post ID
+     * @param array $review_data Review data to save
+     * @return array Results of save operation
+     */
+    public function save_single_review($business_id, $review_data) {
+        $results = array(
+            'success' => false,
+            'message' => '',
+            'business_id' => $business_id,
+            'review_saved' => false,
+            'errors' => array()
+        );
+
+        try {
+            // Debug: Log what we received
+            error_log("Trustpilot Debug: save_single_review called with business_id: {$business_id}, review_data type: " . gettype($review_data));
+            if (is_array($review_data)) {
+                error_log("Trustpilot Debug: review_data keys: " . implode(', ', array_keys($review_data)));
+            } else {
+                error_log("Trustpilot Debug: review_data value: " . var_export($review_data, true));
+            }
+
+            // Get the business post
+            $business = get_post($business_id);
+            if (!$business || $business->post_type !== 'tp_businesses') {
+                throw new Exception("Business with ID $business_id not found");
+            }
+
+            // Get the business URL to extract domain
+            $business_url = get_post_meta($business_id, 'business_url', true);
+            if (!$business_url) {
+                throw new Exception("Business URL not found for business ID $business_id");
+            }
+
+            // Extract business domain for taxonomy
+            $business_domain = $this->extract_business_domain($business_url);
+
+            // Get or create taxonomy term
+            $term = get_term_by('slug', $business_domain, 'tp_business');
+            if (!$term || is_wp_error($term)) {
+                $term = $this->create_taxonomy_term($business_domain);
+            }
+
+            if (!$term || is_wp_error($term)) {
+                throw new Exception("Failed to create taxonomy term for domain: $business_domain");
+            }
+
+            // Create the review post
+            $review_result = $this->create_single_review($review_data, $term);
+
+            if ($review_result['success']) {
+                $results['success'] = true;
+                $results['review_saved'] = true;
+                $results['message'] = "Review saved successfully for business '{$business->post_title}'";
+            } else {
+                $results['message'] = 'Failed to save review: ' . $review_result['message'];
+            }
+
+        } catch (Exception $e) {
+            $results['errors'][] = $e->getMessage();
+            $results['message'] = 'Error: ' . $e->getMessage();
+        }
+
+        return $results;
+    }
+
+    /**
+     * Check which businesses are due for scraping and schedule them
+     * Called by WordPress cron every hour
+     */
+    public static function check_and_schedule_due_businesses() {
+        if (!class_exists('ActionScheduler')) {
+            return;
+        }
+        
+        try {
+            $businesses = get_posts(array(
+                'post_type' => 'tp_businesses',
+                'post_status' => 'publish',
+                'numberposts' => -1,
+                'fields' => 'ids'
+            ));
+            
+            $scheduled_count = 0;
+            
+            foreach ($businesses as $business_id) {
+                $last_scraped = get_post_meta($business_id, '_last_scraped', true);
+                $scraping_frequency_hours = get_option('trustpilot_scraping_frequency', EDIBLE_TP_DEFAULT_SCRAPING_FREQUENCY);
+                
+                // Check if business is due for scraping
+                if (!$last_scraped || (time() - strtotime($last_scraped)) >= ($scraping_frequency_hours * HOUR_IN_SECONDS)) {
+                    as_enqueue_async_action(
+                        'trustpilot_update_business_action',
+                        array($business_id),
+                        'trustpilot-scraping',
+                        array(
+                            'retry_count' => 3,
+                            'retry_delay' => 300 // 5 minutes
+                        )
+                    );
+                    $scheduled_count++;
+                }
+            }
+            
+            if ($scheduled_count > 0) {
+                error_log("Trustpilot Scheduler: Scheduled {$scheduled_count} businesses for scraping");
+            }
+            
+        } catch (Exception $e) {
+            error_log("Trustpilot Scheduler Error: " . $e->getMessage());
+            // Don't re-throw - WordPress cron will retry in an hour anyway
+        }
     }
 } 

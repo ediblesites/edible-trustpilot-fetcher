@@ -130,26 +130,6 @@ echo "App Password: " . str_repeat('*', strlen($wp_app_password)) . "\n";
 echo "Selected URL: $selected_url (from $url_source)\n";
 echo "Business Title: $business_title\n\n";
 
-// Test 0: Verify authentication works
-echo "Test 0: Verifying authentication...\n";
-$auth_result = wp_rest_request('/wp-json/trustpilot-fetcher/v1/auth-test');
-
-echo "Authentication Test:\n";
-echo "- HTTP Code: " . $auth_result['http_code'] . "\n";
-if ($auth_result['success']) {
-    echo "- Authentication: SUCCESS\n";
-    if ($auth_result['data']) {
-        echo "- User: " . $auth_result['data']['username'] . " (ID: " . $auth_result['data']['user_id'] . ")\n";
-    }
-} else {
-    echo "- Authentication: FAILURE\n";
-    if ($auth_result['error']) {
-        echo "- Error: " . $auth_result['error'] . "\n";
-    }
-    exit(1);
-}
-echo "\n";
-
 // Test 1: Delete business endpoint
 echo "Test 1: Calling delete business endpoint...\n";
 $delete_result = wp_rest_request('/wp-json/trustpilot-fetcher/v1/delete-business', 'POST', array(
