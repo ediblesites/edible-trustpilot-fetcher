@@ -102,57 +102,23 @@ class Trustpilot_Admin {
     }
 
     /**
-     * Dashboard overview page
+     * Dashboard page
      */
     public function dashboard_page() {
-        // Get all businesses
-        $businesses = get_posts(array(
-            'post_type' => 'tp_businesses',
-            'post_status' => 'publish',
-            'numberposts' => -1
-        ));
-
-        // Get review limit setting
+        $business_manager = new Trustpilot_Business_Manager();
+        $stats = $business_manager->get_business_statistics();
         $review_limit = get_option('trustpilot_review_limit', 5);
-        
         ?>
         <div class="wrap">
             <h1>Trustpilot Fetcher Dashboard</h1>
             
             <div class="trustpilot-stats">
                 <h2>Overview</h2>
-                <p><strong>Review Limit:</strong> <?php echo esc_html($review_limit); ?> reviews per business</p>
-                <p><strong>Total Businesses:</strong> <?php echo count($businesses); ?></p>
-                
-                <?php
-                $total_reviews = 0;
-                foreach ($businesses as $business) {
-                    $business_url = get_post_meta($business->ID, 'business_url', true);
-                    $parsed_url = parse_url($business_url);
-                    $path_parts = explode('/', trim($parsed_url['path'] ?? '', '/'));
-                    $business_domain = $path_parts[1] ?? '';
-                    
-                    if ($business_domain) {
-                        $reviews = get_posts(array(
-                            'post_type' => 'tp_reviews',
-                            'tax_query' => array(
-                                array(
-                                    'taxonomy' => 'tp_business',
-                                    'field' => 'slug',
-                                    'terms' => $business_domain
-                                )
-                            ),
-                            'post_status' => 'publish',
-                            'numberposts' => -1
-                        ));
-                        $total_reviews += count($reviews);
-                    }
-                }
-                ?>
-                <p><strong>Total Reviews:</strong> <?php echo $total_reviews; ?></p>
+                <p><strong>Total Businesses:</strong> <?php echo $stats['total_businesses']; ?></p>
+                <p><strong>Total Reviews:</strong> <?php echo $stats['total_reviews']; ?></p>
             </div>
 
-            <?php if (!empty($businesses)): ?>
+            <?php if (!empty($stats['businesses'])): ?>
                 <h2>Businesses</h2>
                 <table class="wp-list-table widefat fixed striped">
                     <thead>
@@ -166,47 +132,23 @@ class Trustpilot_Admin {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($businesses as $business): ?>
-                            <?php
-                            $business_url = get_post_meta($business->ID, 'business_url', true);
-                            $parsed_url = parse_url($business_url);
-                            $path_parts = explode('/', trim($parsed_url['path'] ?? '', '/'));
-                            $business_domain = $path_parts[1] ?? '';
-                            
-                            $review_count = 0;
-                            if ($business_domain) {
-                                $reviews = get_posts(array(
-                                    'post_type' => 'tp_reviews',
-                                    'tax_query' => array(
-                                        array(
-                                            'taxonomy' => 'tp_business',
-                                            'field' => 'slug',
-                                            'terms' => $business_domain
-                                        )
-                                    ),
-                                    'post_status' => 'publish',
-                                    'numberposts' => -1
-                                ));
-                                $review_count = count($reviews);
-                            }
-                            ?>
+                        <?php foreach ($stats['businesses'] as $business): ?>
                             <tr>
                                 <td>
-                                    <strong><?php echo esc_html($business->post_title); ?></strong>
+                                    <strong><?php echo esc_html($business['title']); ?></strong>
                                 </td>
                                 <td>
-                                    <a href="<?php echo esc_url($business_url); ?>" target="_blank">
-                                        <?php echo esc_html($business_url); ?>
+                                    <a href="<?php echo esc_url($business['url']); ?>" target="_blank">
+                                        <?php echo esc_html($business['url']); ?>
                                     </a>
                                 </td>
                                 <td>
-                                    <?php echo $review_count; ?> / <?php echo $review_limit; ?>
+                                    <?php echo $business['review_count']; ?> / <?php echo $review_limit; ?>
                                 </td>
                                 <td>
                                     <?php 
-                                    $last_scraped = get_post_meta($business->ID, 'last_scraped', true);
-                                    if ($last_scraped) {
-                                        echo esc_html($last_scraped);
+                                    if ($business['last_scraped']) {
+                                        echo esc_html($business['last_scraped']);
                                     } else {
                                         echo 'Never';
                                     }
@@ -214,30 +156,18 @@ class Trustpilot_Admin {
                                 </td>
                                 <td>
                                     <?php 
-                                    if ($last_scraped) {
-                                        $scraping_frequency_hours = get_option('trustpilot_scraping_frequency', 24);
-                                        $scraping_frequency_seconds = $scraping_frequency_hours * 3600;
-                                        $last_scraped_timestamp = strtotime($last_scraped);
-                                        $next_scrape_timestamp = $last_scraped_timestamp + $scraping_frequency_seconds;
-                                        $next_scrape_date = date('Y-m-d H:i:s', $next_scrape_timestamp);
-                                        
-                                        $current_time = current_time('timestamp');
-                                        if ($current_time >= $next_scrape_timestamp) {
-                                            echo '<span style="color: #d63638; font-weight: bold;">Due now</span>';
-                                        } else {
-                                            $hours_remaining = ceil(($next_scrape_timestamp - $current_time) / 3600);
-                                            echo esc_html($next_scrape_date) . '<br><small>(' . $hours_remaining . ' hours)</small>';
-                                        }
-                                    } else {
+                                    if ($business['next_scrape']['is_due']) {
                                         echo '<span style="color: #d63638; font-weight: bold;">Due now</span>';
+                                    } else {
+                                        echo esc_html($business['next_scrape']['next_scrape']) . '<br><small>(' . $business['next_scrape']['hours_remaining'] . ' hours)</small>';
                                     }
                                     ?>
                                 </td>
                                 <td>
-                                    <a href="<?php echo get_edit_post_link($business->ID); ?>" class="button button-small">
+                                    <a href="<?php echo get_edit_post_link($business['id']); ?>" class="button button-small">
                                         Edit
                                     </a>
-                                    <a href="<?php echo get_delete_post_link($business->ID); ?>" class="button button-small button-link-delete">
+                                    <a href="<?php echo get_delete_post_link($business['id']); ?>" class="button button-small button-link-delete">
                                         Delete
                                     </a>
                                 </td>
@@ -266,15 +196,6 @@ class Trustpilot_Admin {
                 <?php wp_nonce_field('add_trustpilot_business', 'trustpilot_nonce'); ?>
                 
                 <table class="form-table">
-                    <tr>
-                        <th scope="row">
-                            <label for="business_title">Business Name</label>
-                        </th>
-                        <td>
-                            <input type="text" id="business_title" name="business_title" class="regular-text" required>
-                            <p class="description">Enter the name you want to use for this business</p>
-                        </td>
-                    </tr>
                     <tr>
                         <th scope="row">
                             <label for="business_url">Trustpilot URL</label>
@@ -350,23 +271,6 @@ class Trustpilot_Admin {
     }
 
     /**
-     * Validate Trustpilot URL
-     */
-    private function validate_trustpilot_url($url) {
-        // Check if it's a valid URL
-        if (!filter_var($url, FILTER_VALIDATE_URL)) {
-            return new WP_Error('invalid_url', 'Please enter a valid URL');
-        }
-
-        // Check if it's a Trustpilot URL
-        if (!preg_match('/^https?:\/\/(www\.)?trustpilot\.com\/review\//', $url)) {
-            return new WP_Error('not_trustpilot', 'Please enter a valid Trustpilot review URL');
-        }
-
-        return true;
-    }
-
-    /**
      * Handle AJAX add business request
      */
     public function handle_add_business() {
@@ -380,78 +284,24 @@ class Trustpilot_Admin {
             wp_die('Insufficient permissions');
         }
 
-        $business_title = sanitize_text_field($_POST['business_title']);
         $business_url = esc_url_raw($_POST['business_url']);
 
         // Validate inputs
-        if (empty($business_title) || empty($business_url)) {
-            wp_send_json_error('Please fill in all fields');
+        if (empty($business_url)) {
+            wp_send_json_error('Please enter a Trustpilot URL');
         }
 
-        // Validate Trustpilot URL
-        $validation = $this->validate_trustpilot_url($business_url);
-        if (is_wp_error($validation)) {
-            wp_send_json_error($validation->get_error_message());
-        }
-
-        // Check if business already exists
-        $existing = get_posts(array(
-            'post_type' => 'tp_businesses',
-            'meta_query' => array(
-                array(
-                    'key' => 'business_url',
-                    'value' => $business_url,
-                    'compare' => '='
-                )
-            ),
-            'post_status' => 'any'
-        ));
-
-        if (!empty($existing)) {
-            wp_send_json_error('A business with this Trustpilot URL already exists');
-        }
-
-        // Create business post
-        $post_data = array(
-            'post_title' => $business_title,
-            'post_content' => '',
-            'post_status' => 'publish',
-            'post_type' => 'tp_businesses'
-        );
-
-        $post_id = wp_insert_post($post_data);
-
-        if (is_wp_error($post_id)) {
-            wp_send_json_error('Failed to create business post');
-        }
-
-        // Save business URL
-        update_post_meta($post_id, 'business_url', $business_url);
-        // Note: Using WordPress post status instead of custom status meta field
-        // 'publish' = active, 'draft' = paused, 'private' = inactive
-
-        // Ensure the post is published and all meta is saved before scraping
-        wp_cache_flush(); // Clear any cached data
-        clean_post_cache($post_id); // Ensure fresh post data
-
-        // Trigger initial scraping using business manager
+        // Use business manager to handle all business logic
         $business_manager = new Trustpilot_Business_Manager();
-        $result = $business_manager->scrape_single_business($business_url);
+        $result = $business_manager->create_business($business_url);
 
-        if (is_wp_error($result)) {
-            // Business created but scraping failed
+        if ($result['success']) {
             wp_send_json_success(array(
-                'message' => 'Business added successfully, but initial scraping failed: ' . $result->get_error_message(),
-                'post_id' => $post_id
+                'message' => $result['message'],
+                'post_id' => $result['post_id']
             ));
         } else {
-            // Update business with scraped data
-            $business_manager->update_business_data($post_id, $result);
-
-            wp_send_json_success(array(
-                'message' => 'Business added and initial scraping completed successfully',
-                'post_id' => $post_id
-            ));
+            wp_send_json_error($result['message']);
         }
     }
 

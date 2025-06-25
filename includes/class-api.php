@@ -23,11 +23,6 @@ class Trustpilot_API {
             'callback' => array(__CLASS__, 'create_business_endpoint'),
             'permission_callback' => array(__CLASS__, 'check_permissions'),
             'args' => array(
-                'title' => array(
-                    'required' => true,
-                    'type' => 'string',
-                    'sanitize_callback' => 'sanitize_text_field'
-                ),
                 'url' => array(
                     'required' => true,
                     'type' => 'string',
@@ -61,7 +56,6 @@ class Trustpilot_API {
      * REST API endpoint for creating businesses
      */
     public static function create_business_endpoint($request) {
-        $title = $request->get_param('title');
         $url = $request->get_param('url');
         
         $response = array(
@@ -72,17 +66,20 @@ class Trustpilot_API {
         
         try {
             // Minimal validation
-            if (empty($title) || empty($url)) {
-                throw new Exception('Title and URL are required');
+            if (empty($url)) {
+                throw new Exception('URL is required');
             }
 
             // Relay to business manager
             $business_manager = new Trustpilot_Business_Manager();
-            $result = $business_manager->create_business($title, $url);
+            $result = $business_manager->create_business($url);
 
             if ($result['success']) {
                 $response['success'] = true;
                 $response['message'] = $result['message'];
+                if (isset($result['post_id'])) {
+                    $response['data']['post_id'] = $result['post_id'];
+                }
             } else {
                 $response['message'] = $result['message'];
                 if (isset($result['errors'])) {

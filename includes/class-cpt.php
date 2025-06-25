@@ -299,10 +299,9 @@ class Trustpilot_CPT {
                 // Get the business URL to extract the domain for taxonomy filtering
                 $business_url = get_post_meta($post_id, 'business_url', true);
                 if ($business_url) {
-                    // Extract domain name from Trustpilot URL for taxonomy term
-                    $parsed_url = parse_url($business_url);
-                    $path_parts = explode('/', trim($parsed_url['path'] ?? '', '/'));
-                    $business_domain = $path_parts[1] ?? ''; // /review/domain.com -> domain.com
+                    // Use business manager to extract domain
+                    $business_manager = new Trustpilot_Business_Manager();
+                    $business_domain = $business_manager->extract_business_domain($business_url);
                     
                     if ($business_domain) {
                         $reviews_url = admin_url('edit.php?post_type=tp_reviews&tp_business=' . urlencode($business_domain));
@@ -380,28 +379,5 @@ class Trustpilot_CPT {
             'orderby' => 'title',
             'order' => 'ASC'
         ));
-    }
-
-    /**
-     * Get business by Trustpilot URL
-     * 
-     * @param string $trustpilot_url The Trustpilot URL to search for
-     * @return WP_Post|null Business post object or null if not found
-     */
-    public static function get_business_by_url($trustpilot_url) {
-        $posts = get_posts(array(
-            'post_type' => 'tp_businesses',
-            'post_status' => 'any',
-            'meta_query' => array(
-                array(
-                    'key' => 'business_url',
-                    'value' => $trustpilot_url,
-                    'compare' => '='
-                )
-            ),
-            'numberposts' => 1
-        ));
-
-        return !empty($posts) ? $posts[0] : null;
     }
 } 
