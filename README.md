@@ -2,7 +2,7 @@
 
 A WordPress plugin that scrapes Trustpilot reviews and displays them on your WordPress site using custom post types and taxonomies.
 
-## Version: 1.0.3
+## Version: 1.0.4
 
 ## Features
 
@@ -22,6 +22,24 @@ A WordPress plugin that scrapes Trustpilot reviews and displays them on your Wor
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Go to **Trustpilot Businesses > Settings** to configure scraping options
 4. Add your first business via **Trustpilot Businesses > Add Business**
+
+## Updates
+
+This plugin supports automatic updates via the [Git Updater](https://github.com/afragen/git-updater) plugin. To enable automatic updates:
+
+1. Download and install the [Git Updater](https://github.com/afragen/git-updater/releases/) plugin
+2. Activate the plugin and click 'Activate Free License' (no license required)
+3. Go to **Git Updater > Install Plugin**
+4. Add the following details:
+   - **Plugin URI**: `ediblesites/edible-trustpilot-fetcher`
+   - **Repository Branch**: `master`
+   - **Access Token**: Leave empty (not required)
+5. Click 'Install Plugin' button
+
+The plugin includes the required header for Git Updater compatibility:
+```
+GitHub Plugin URI: ediblesites/edible-trustpilot-fetcher
+```
 
 ## Usage
 
