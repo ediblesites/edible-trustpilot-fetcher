@@ -261,40 +261,6 @@ class Trustpilot_Admin {
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('add_trustpilot_business')
             ));
-            
-            // Add custom CSS
-            wp_add_inline_style('wp-admin', '
-                .trustpilot-stats {
-                    background: #fff;
-                    border: 1px solid #ccd0d4;
-                    border-radius: 4px;
-                    padding: 20px;
-                    margin: 20px 0;
-                }
-                .trustpilot-stats h2 {
-                    margin-top: 0;
-                    color: #23282d;
-                }
-                .trustpilot-stats p {
-                    margin: 10px 0;
-                    font-size: 14px;
-                }
-                .trustpilot-stats strong {
-                    color: #0073aa;
-                }
-                .wp-list-table th {
-                    font-weight: 600;
-                }
-                .wp-list-table td {
-                    vertical-align: middle;
-                }
-                .button-link-delete {
-                    color: #a00 !important;
-                }
-                .button-link-delete:hover {
-                    color: #dc3232 !important;
-                }
-            ');
         }
     }
 } 

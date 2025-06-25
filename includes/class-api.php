@@ -43,13 +43,6 @@ class Trustpilot_API {
                 )
             )
         ));
-
-        // Authentication test endpoint
-        register_rest_route('trustpilot-fetcher/v1', '/auth-test', array(
-            'methods' => 'GET',
-            'callback' => array(__CLASS__, 'auth_test'),
-            'permission_callback' => array(__CLASS__, 'check_permissions')
-        ));
     }
     
     /**
@@ -130,24 +123,6 @@ class Trustpilot_API {
             $response['message'] = 'Error: ' . $e->getMessage();
             return new WP_REST_Response($response, 400);
         }
-    }
-
-    /**
-     * Authentication test endpoint
-     */
-    public static function auth_test($request) {
-        $current_user = wp_get_current_user();
-        
-        return new WP_REST_Response(array(
-            'message' => 'Authentication test successful',
-            'user_id' => $current_user->ID,
-            'username' => $current_user->user_login,
-            'display_name' => $current_user->display_name,
-            'email' => $current_user->user_email,
-            'roles' => $current_user->roles,
-            'capabilities' => $current_user->allcaps,
-            'timestamp' => current_time('mysql')
-        ), 200);
     }
 
     /**

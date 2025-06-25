@@ -326,6 +326,7 @@ class Trustpilot_CPT {
             if ($key === 'title') {
                 $new_columns['business'] = 'Business';
                 $new_columns['rating'] = 'Rating';
+                $new_columns['review_content'] = 'Review Content';
             }
         }
         return $new_columns;
@@ -350,6 +351,19 @@ class Trustpilot_CPT {
                     echo esc_html($rating) . ' ★';
                 } else {
                     echo 'N/A';
+                }
+                break;
+            case 'review_content':
+                $review = get_post($post_id);
+                if ($review && !empty($review->post_content)) {
+                    // Truncate long reviews and add ellipsis
+                    $content = wp_strip_all_tags($review->post_content);
+                    if (strlen($content) > 200) {
+                        $content = substr($content, 0, 200) . '...';
+                    }
+                    echo '<div style="max-width: 400px; word-wrap: break-word;">' . esc_html($content) . '</div>';
+                } else {
+                    echo '<em>No content</em>';
                 }
                 break;
         }
