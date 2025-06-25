@@ -7,6 +7,7 @@ class Trustpilot_Admin {
 
     public function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'));
+        add_action('admin_menu', array($this, 'rename_first_submenu'), 999);
         add_action('admin_init', array($this, 'init_settings'));
         add_action('wp_ajax_add_trustpilot_business', array($this, 'handle_add_business'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
@@ -55,6 +56,23 @@ class Trustpilot_Admin {
             'trustpilot-settings',
             array($this, 'settings_page')
         );
+    }
+
+    /**
+     * Rename the first submenu item to "All Businesses"
+     */
+    public function rename_first_submenu() {
+        global $submenu;
+        
+        if (isset($submenu['edit.php?post_type=tp_businesses'])) {
+            // Find and rename the first submenu item
+            foreach ($submenu['edit.php?post_type=tp_businesses'] as $key => $item) {
+                if ($item[2] === 'edit.php?post_type=tp_businesses') {
+                    $submenu['edit.php?post_type=tp_businesses'][$key][0] = 'All Businesses';
+                    break;
+                }
+            }
+        }
     }
 
     /**
