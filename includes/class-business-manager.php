@@ -92,7 +92,7 @@ class Trustpilot_Business_Manager {
      * @param string $business_domain Business domain
      * @return int Number of reviews deleted
      */
-    private function delete_reviews_and_term($business_domain) {
+    public function delete_reviews_and_term($business_domain) {
         $reviews = $this->get_reviews_by_domain($business_domain);
         $deleted_count = 0;
         

@@ -2,7 +2,7 @@
 
 A WordPress plugin that scrapes Trustpilot reviews and displays them on your WordPress site using custom post types and taxonomies.
 
-## Version: 1.0.8
+## Version: 1.0.9
 
 ## Features
 

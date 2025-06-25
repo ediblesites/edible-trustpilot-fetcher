@@ -161,6 +161,10 @@ class Trustpilot_CPT {
         add_action('manage_tp_businesses_posts_custom_column', array(__CLASS__, 'populate_business_admin_columns'), 10, 2);
         add_action('manage_tp_reviews_posts_columns', array(__CLASS__, 'add_review_admin_columns'));
         add_action('manage_tp_reviews_posts_custom_column', array(__CLASS__, 'populate_review_admin_columns'), 10, 2);
+        
+        // Hook to clean up reviews when business is deleted
+        add_action('before_delete_post', array(__CLASS__, 'cleanup_business_reviews'));
+        add_action('wp_trash_post', array(__CLASS__, 'cleanup_business_reviews'));
     }
 
     /**
@@ -382,5 +386,28 @@ class Trustpilot_CPT {
             'orderby' => 'title',
             'order' => 'ASC'
         ));
+    }
+
+    /**
+     * Clean up reviews and taxonomy when a business is deleted
+     * 
+     * @param int $post_id The post ID being deleted
+     */
+    public static function cleanup_business_reviews($post_id) {
+        $post = get_post($post_id);
+        
+        // Only process business posts
+        if ($post && $post->post_type === 'tp_businesses') {
+            $business_url = get_post_meta($post_id, 'business_url', true);
+            if ($business_url) {
+                $business_manager = new Trustpilot_Business_Manager();
+                $business_domain = $business_manager->extract_business_domain($business_url);
+                
+                if ($business_domain) {
+                    // Use the existing method to delete reviews and taxonomy
+                    $business_manager->delete_reviews_and_term($business_domain);
+                }
+            }
+        }
     }
 } 
