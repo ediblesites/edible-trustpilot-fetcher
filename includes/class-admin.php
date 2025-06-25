@@ -16,16 +16,6 @@ class Trustpilot_Admin {
      * Add admin menu items
      */
     public function add_admin_menu() {
-        // Dashboard overview page
-        add_submenu_page(
-            'edit.php?post_type=tp_businesses',
-            'Dashboard',
-            'Dashboard',
-            'manage_options',
-            'trustpilot-dashboard',
-            array($this, 'dashboard_page')
-        );
-
         // Add Business submenu under Trustpilot Businesses
         add_submenu_page(
             'edit.php?post_type=tp_businesses',
@@ -99,89 +89,6 @@ class Trustpilot_Admin {
             'trustpilot_settings',
             'trustpilot_scraping_section'
         );
-    }
-
-    /**
-     * Dashboard page
-     */
-    public function dashboard_page() {
-        $business_manager = new Trustpilot_Business_Manager();
-        $stats = $business_manager->get_business_statistics();
-        $review_limit = get_option('trustpilot_review_limit', 5);
-        ?>
-        <div class="wrap">
-            <h1>Trustpilot Fetcher Dashboard</h1>
-            
-            <div class="trustpilot-stats">
-                <h2>Overview</h2>
-                <p><strong>Total Businesses:</strong> <?php echo $stats['total_businesses']; ?></p>
-                <p><strong>Total Reviews:</strong> <?php echo $stats['total_reviews']; ?></p>
-            </div>
-
-            <?php if (!empty($stats['businesses'])): ?>
-                <h2>Businesses</h2>
-                <table class="wp-list-table widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th>Business Name</th>
-                            <th>Trustpilot URL</th>
-                            <th>Reviews</th>
-                            <th>Last Scraped</th>
-                            <th>Next Scrape</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($stats['businesses'] as $business): ?>
-                            <tr>
-                                <td>
-                                    <strong><?php echo esc_html($business['title']); ?></strong>
-                                </td>
-                                <td>
-                                    <a href="<?php echo esc_url($business['url']); ?>" target="_blank">
-                                        <?php echo esc_html($business['url']); ?>
-                                    </a>
-                                </td>
-                                <td>
-                                    <?php echo $business['review_count']; ?> / <?php echo $review_limit; ?>
-                                </td>
-                                <td>
-                                    <?php 
-                                    if ($business['last_scraped']) {
-                                        echo esc_html($business['last_scraped']);
-                                    } else {
-                                        echo 'Never';
-                                    }
-                                    ?>
-                                </td>
-                                <td>
-                                    <?php 
-                                    if ($business['next_scrape']['is_due']) {
-                                        echo '<span style="color: #d63638; font-weight: bold;">Due now</span>';
-                                    } else {
-                                        echo esc_html($business['next_scrape']['next_scrape']) . '<br><small>(' . $business['next_scrape']['hours_remaining'] . ' hours)</small>';
-                                    }
-                                    ?>
-                                </td>
-                                <td>
-                                    <a href="<?php echo get_edit_post_link($business['id']); ?>" class="button button-small">
-                                        Edit
-                                    </a>
-                                    <a href="<?php echo get_delete_post_link($business['id']); ?>" class="button button-small button-link-delete">
-                                        Delete
-                                    </a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php else: ?>
-                <div class="notice notice-info">
-                    <p>No businesses have been added yet. <a href="<?php echo admin_url('edit.php?post_type=tp_businesses&page=add-trustpilot-business'); ?>">Add your first business</a> to get started.</p>
-                </div>
-            <?php endif; ?>
-        </div>
-        <?php
     }
 
     /**

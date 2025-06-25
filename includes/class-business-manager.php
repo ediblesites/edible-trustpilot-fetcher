@@ -192,8 +192,9 @@ class Trustpilot_Business_Manager {
         }
         
         if (!empty($scrape_result['business_name'])) {
-            // Clean business name by removing everything after the bar
+            // Clean business name by removing everything after the bar and "Reviews" suffix
             $business_title = trim(explode('|', $scrape_result['business_name'])[0]);
+            $business_title = preg_replace('/\s*Reviews?\s*$/i', '', $business_title);
         }
 
         $post_data = array(
