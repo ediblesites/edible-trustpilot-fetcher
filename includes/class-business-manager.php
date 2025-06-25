@@ -246,8 +246,12 @@ class Trustpilot_Business_Manager {
      * @return int|WP_Error Review post ID or error
      */
     private function create_single_review($review_data, $term) {
+        // Clean the title by removing "Review by " prefix
+        $title = $review_data['title'] ?: $review_data['author'];
+        $title = preg_replace('/^Review by\s+/i', '', $title);
+        
         $review_post_data = array(
-            'post_title' => $review_data['title'] ?: 'Review by ' . $review_data['author'],
+            'post_title' => $title,
             'post_content' => $review_data['content'],
             'post_status' => 'publish',
             'post_type' => 'tp_reviews',

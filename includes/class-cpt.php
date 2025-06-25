@@ -220,14 +220,6 @@ class Trustpilot_CPT {
             'show_in_rest' => true
         ));
 
-        // reviewer_name - Name of the reviewer
-        register_meta('post', 'reviewer_name', array(
-            'type' => 'string',
-            'description' => 'Name of the reviewer',
-            'single' => true,
-            'show_in_rest' => true
-        ));
-
         // rating - Star rating (1-5)
         register_meta('post', 'rating', array(
             'type' => 'integer',
@@ -259,7 +251,7 @@ class Trustpilot_CPT {
             'hierarchical' => false,
             'labels' => $labels,
             'show_ui' => true,
-            'show_admin_column' => true,
+            'show_admin_column' => false,
             'query_var' => true,
             'rewrite' => array('slug' => 'business'),
             'show_in_rest' => true,
@@ -334,7 +326,6 @@ class Trustpilot_CPT {
             if ($key === 'title') {
                 $new_columns['business'] = 'Business';
                 $new_columns['rating'] = 'Rating';
-                $new_columns['reviewer'] = 'Reviewer';
             }
         }
         return $new_columns;
@@ -348,7 +339,9 @@ class Trustpilot_CPT {
             case 'business':
                 $terms = get_the_terms($post_id, 'tp_business');
                 if ($terms && !is_wp_error($terms)) {
-                    echo esc_html($terms[0]->name);
+                    $term = $terms[0];
+                    $filter_url = admin_url('edit.php?post_type=tp_reviews&tp_business=' . urlencode($term->slug));
+                    echo '<a href="' . esc_url($filter_url) . '">' . esc_html($term->name) . '</a>';
                 }
                 break;
             case 'rating':
@@ -358,10 +351,6 @@ class Trustpilot_CPT {
                 } else {
                     echo 'N/A';
                 }
-                break;
-            case 'reviewer':
-                $reviewer = get_post_meta($post_id, 'reviewer_name', true);
-                echo esc_html($reviewer ? $reviewer : 'Anonymous');
                 break;
         }
     }
