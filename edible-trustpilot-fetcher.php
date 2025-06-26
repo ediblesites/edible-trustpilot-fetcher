@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Edible Trustpilot Fetcher
+ * Plugin Name: Trustpilot Fetcher
  * Description: Scrape and display Trustpilot reviews on WordPress sites
  * Version: 1.0.11
  * Author: Edible Sites
