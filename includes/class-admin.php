@@ -97,6 +97,12 @@ class Trustpilot_Admin {
             'sanitize_callback' => 'intval'
         ));
 
+        register_setting('trustpilot_settings', 'trustpilot_debug', array(
+            'type' => 'boolean',
+            'default' => false,
+            'sanitize_callback' => 'rest_sanitize_boolean'
+        ));
+
         add_settings_section(
             'trustpilot_scraping_section',
             'Scraping Settings',
@@ -124,6 +130,14 @@ class Trustpilot_Admin {
             'trustpilot_rate_limit',
             'Rate Limit (seconds between requests)',
             array($this, 'rate_limit_callback'),
+            'trustpilot_settings',
+            'trustpilot_scraping_section'
+        );
+
+        add_settings_field(
+            'trustpilot_debug',
+            'Debug Mode',
+            array($this, 'debug_callback'),
             'trustpilot_settings',
             'trustpilot_scraping_section'
         );
@@ -213,6 +227,15 @@ class Trustpilot_Admin {
         $value = get_option('trustpilot_rate_limit', 5);
         echo '<input type="number" name="trustpilot_rate_limit" value="' . esc_attr($value) . '" min="1" max="60" /> seconds';
         echo '<p class="description">Delay between requests to avoid being blocked</p>';
+    }
+
+    /**
+     * Debug mode field callback
+     */
+    public function debug_callback() {
+        $value = get_option('trustpilot_debug', false);
+        echo '<input type="checkbox" name="trustpilot_debug" value="1" ' . checked($value, true, false) . ' />';
+        echo '<p class="description">Enable debug mode</p>';
     }
 
     /**

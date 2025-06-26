@@ -862,6 +862,8 @@ class Trustpilot_Business_Manager {
                 'fields' => 'ids'
             ));
             
+            $rate_limit_seconds = get_option('trustpilot_rate_limit', 5);
+            $delay = 0;
             $scheduled_count = 0;
             
             foreach ($businesses as $business_id) {
@@ -874,13 +876,21 @@ class Trustpilot_Business_Manager {
                     $args = array($business_id);
                     $group = 'trustpilot-scraping';
                     
-                    as_enqueue_async_action($hook, $args, $group, false, 10);
+                    // Schedule with staggered timing to respect rate limits
+                    as_schedule_single_action(
+                        time() + $delay,
+                        $hook,
+                        $args,
+                        $group
+                    );
+                    
                     $scheduled_count++;
+                    $delay += $rate_limit_seconds; // Stagger each job by rate limit
                 }
             }
             
             if ($scheduled_count > 0) {
-                error_log("Trustpilot Scheduler: Scheduled {$scheduled_count} businesses for scraping");
+                error_log("Trustpilot Scheduler: Scheduled {$scheduled_count} businesses for scraping with {$rate_limit_seconds}s intervals");
             }
             
         } catch (Exception $e) {

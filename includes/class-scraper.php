@@ -7,7 +7,6 @@
 class Trustpilot_Scraper {
 
     private $user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
-    private $delay_between_requests = 3; // seconds
 
     public function __construct() {
         // Constructor
@@ -58,15 +57,12 @@ class Trustpilot_Scraper {
     }
 
     /**
-     * Fetch page content with rate limiting
+     * Fetch page content
      * 
      * @param string $url URL to fetch
      * @return string|WP_Error HTML content or error
      */
     private function fetch_page($url) {
-        // Rate limiting
-        sleep($this->delay_between_requests);
-
         // Initialize cURL
         $ch = curl_init();
         
