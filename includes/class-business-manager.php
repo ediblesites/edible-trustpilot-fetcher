@@ -243,7 +243,7 @@ class Trustpilot_Business_Manager {
      * 
      * @param array $review_data Review data
      * @param WP_Term $term Taxonomy term
-     * @return int|WP_Error Review post ID or error
+     * @return array Results of create operation
      */
     private function create_single_review($review_data, $term) {
         // Clean the title by removing "Review by " prefix
@@ -261,7 +261,10 @@ class Trustpilot_Business_Manager {
         $review_id = wp_insert_post($review_post_data);
         
         if (is_wp_error($review_id)) {
-            return $review_id;
+            return array(
+                'success' => false,
+                'message' => $review_id->get_error_message()
+            );
         }
 
         // Save review metadata
@@ -273,10 +276,17 @@ class Trustpilot_Business_Manager {
         // Link review to business via taxonomy
         $result = wp_set_object_terms($review_id, $term->term_id, 'tp_business');
         if (is_wp_error($result)) {
-            return $result;
+            return array(
+                'success' => false,
+                'message' => $result->get_error_message()
+            );
         }
 
-        return $review_id;
+        return array(
+            'success' => true,
+            'message' => 'Review created successfully',
+            'review_id' => $review_id
+        );
     }
 
     /**
@@ -643,10 +653,15 @@ class Trustpilot_Business_Manager {
      * 
      * @param int $business_id Business post ID
      * @param array $review_data Review data to save
+     * @param int|null $index Review index (optional)
      * @return array Results of save operation
      */
-    public static function save_single_review_job($business_id, $review_data) {
+    public static function save_single_review_job($business_id, $review_data, $index = null) {
         error_log("Trustpilot Debug: Processing review job for business {$business_id}");
+        error_log("Trustpilot Debug: Job started at: " . date('Y-m-d H:i:s'));
+        if ($index !== null) {
+            error_log("Trustpilot Debug: Processing review index: {$index}");
+        }
         
         try {
             $business_manager = new self();
@@ -655,9 +670,16 @@ class Trustpilot_Business_Manager {
             // Log result
             error_log("Trustpilot Save Single Review Result for Business {$business_id}: " . json_encode($result));
             
+            if ($result['success']) {
+                error_log("Trustpilot Debug: Review job completed successfully for business {$business_id}");
+            } else {
+                error_log("Trustpilot Debug: Review job failed for business {$business_id}: " . $result['message']);
+            }
+            
             return $result;
         } catch (Exception $e) {
             error_log("Trustpilot Save Single Review Error for Business {$business_id}: " . $e->getMessage());
+            error_log("Trustpilot Debug: Exception trace: " . $e->getTraceAsString());
             throw $e; // Re-throw to trigger Action Scheduler retry
         }
     }
@@ -724,18 +746,20 @@ class Trustpilot_Business_Manager {
                 error_log("Trustpilot Debug: Found " . count($scraped_data['reviews']) . " reviews to queue for business {$business_id}");
                 
                 foreach ($scraped_data['reviews'] as $index => $review) {
-                    error_log("Trustpilot Debug: Queuing review {$index} for business {$business_id}");
-                    
-                    as_enqueue_async_action(
-                        'trustpilot_save_review_action',
-                        array($business_id, $review),
-                        'trustpilot-scraping',
-                        array(
-                            'retry_count' => 3,
-                            'retry_delay' => 300 // 5 minutes
-                        )
+                    // Debug: Log the exact parameters being passed
+                    $hook = 'trustpilot_save_review_action';
+                    $args = array($business_id, $review);
+                    $group = 'trustpilot-scraping-' . $business_id . '-' . $index; // Make group unique
+                    $options = array(
+                        'retry_count' => 3,
+                        'retry_delay' => 300 // 5 minutes
                     );
-                    $results['reviews_queued']++;
+                    
+                    $job_id = as_enqueue_async_action($hook, $args, $group, $options, false);
+                    
+                    if ($job_id) {
+                        $results['reviews_queued']++;
+                    }
                 }
                 
                 error_log("Trustpilot Debug: Successfully queued {$results['reviews_queued']} review jobs for business {$business_id}");
