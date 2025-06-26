@@ -74,3 +74,10 @@ The plugin automatically checks for new reviews based on your frequency setting.
 ## Support
 
 For support and feature requests, please [create an issue](https://github.com/ediblesites/edible-trustpilot-fetcher/issues) here on Github.
+
+---
+
+**Made this for us at [Edible Sites](https://ediblesites.com), sharing it with you ❤️** We're also behind:
+
+* [PayPerFax.com](https://payperfax.com/), a pay-per-use online fax service, and
+* [Faxbeep.com](https://faxbeep.com), a free fax testing service

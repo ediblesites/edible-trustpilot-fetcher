@@ -14,7 +14,7 @@
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Network: false
- * GitHub Plugin URI: ediblesites/edible-trustpilot-fetcher
+ * GitHub Plugin URI: https://github.com/ediblesites/edible-trustpilot-fetcher
  */
 
 // Prevent direct access
