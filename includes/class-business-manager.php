@@ -743,9 +743,12 @@ class Trustpilot_Business_Manager {
 
             // Queue individual review jobs
             if (!empty($scraped_data['reviews']) && is_array($scraped_data['reviews'])) {
-                error_log("Trustpilot Debug: Found " . count($scraped_data['reviews']) . " reviews to queue for business {$business_id}");
+                $max_reviews = get_option('trustpilot_review_limit', 5);
+                $reviews_to_queue = array_slice($scraped_data['reviews'], 0, $max_reviews);
                 
-                foreach ($scraped_data['reviews'] as $index => $review) {
+                error_log("Trustpilot Debug: Found " . count($scraped_data['reviews']) . " reviews, limiting to {$max_reviews} for business {$business_id}");
+                
+                foreach ($reviews_to_queue as $index => $review) {
                     $hook = 'trustpilot_save_review_action';
                     $args = array($business_id, $review);
                     $group = 'trustpilot-scraping';

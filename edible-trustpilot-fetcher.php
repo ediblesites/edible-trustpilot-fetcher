@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Edible Trustpilot Fetcher
  * Description: Scrape and display Trustpilot reviews on WordPress sites
- * Version: 1.0.9
+ * Version: 1.0.10
  * Author: Edible Sites
  * Author URI: https://ediblesites.com
  * Plugin URI: https://github.com/ediblesites/edible-trustpilot-fetcher

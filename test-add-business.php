@@ -6,7 +6,7 @@
  * 
  * Usage: php test-add-business.php [trustpilot_url]
  * Example: php test-add-business.php https://trustpilot.com/review/dazedcarry.com
- * If no URL provided, uses a random URL from the predefined list
+ * If no URL provided, will prompt for one
  */
 
 // Configuration
@@ -23,17 +23,6 @@ if (file_exists($secrets_file)) {
     $wp_username = 'WP_USERNAME';
     $wp_app_password = 'WP_APP_PASSWORD';
 }
-
-// Test URLs (fallback list)
-$test_urls = array(
-    'https://trustpilot.com/review/www.salonsdirect.com',
-    'https://trustpilot.com/review/www.rangeplus.com',
-    'https://trustpilot.com/review/yelp.com',
-    'https://trustpilot.com/review/dazedcarry.com',
-    'https://trustpilot.com/review/direct2compensation.co.uk',
-    'https://trustpilot.com/review/ramnode.com',
-    'https://trustpilot.com/review/welovekeys.co.uk'
-);
 
 /**
  * Make an authenticated REST API request to WordPress
@@ -94,7 +83,21 @@ function wp_rest_request($endpoint, $method = 'GET', $data = null) {
     );
 }
 
-// Get URL from command line or use random selection
+/**
+ * Prompt user for input
+ * 
+ * @param string $prompt The prompt message
+ * @return string User input
+ */
+function prompt_user($prompt) {
+    echo $prompt;
+    $handle = fopen("php://stdin", "r");
+    $input = trim(fgets($handle));
+    fclose($handle);
+    return $input;
+}
+
+// Get URL from command line or prompt user
 $selected_url = null;
 $url_source = '';
 
@@ -117,8 +120,15 @@ if ($argc > 1) {
         exit(1);
     }
 } else {
-    $selected_url = $test_urls[array_rand($test_urls)];
-    $url_source = 'random selection';
+    echo "No Trustpilot URL provided on command line.\n";
+    $selected_url = prompt_user("Please enter a Trustpilot URL: ");
+    $url_source = 'user input';
+    
+    // Validate the prompted URL
+    if (!filter_var($selected_url, FILTER_VALIDATE_URL) || strpos($selected_url, 'trustpilot.com') === false) {
+        echo "Error: Invalid Trustpilot URL format. Please provide a valid Trustpilot URL.\n";
+        exit(1);
+    }
 }
 
 $business_title = 'Test Business - ' . date('Y-m-d H:i:s');
