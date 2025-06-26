@@ -9,19 +9,14 @@
  * If no URL provided, will prompt for one
  */
 
-// Configuration
-$site_url = 'https://edible-sandbox.local'; // Update this to your site URL
-define('WP_USERNAME', '{Insert username here}'); // Update this to your admin username
-define('WP_APP_PASSWORD', '{Insert app password here}'); // Update this to your application password
-
-// Load secrets configuration if available, otherwise use fallback credentials
-$secrets_file = __DIR__ . '/secrets.php';
+// Load secrets configuration
+$secrets_file = __DIR__ . '/../secrets.php';
 if (file_exists($secrets_file)) {
     require_once $secrets_file;
 } else {
-    // Fallback credentials - update these if secrets.php is not available
-    $wp_username = 'WP_USERNAME';
-    $wp_app_password = 'WP_APP_PASSWORD';
+    echo "Error: secrets.php file not found. Please create this file with your configuration.\n";
+    echo "Required variables: \$site_url, \$wp_username, \$wp_app_password\n";
+    exit(1);
 }
 
 /**

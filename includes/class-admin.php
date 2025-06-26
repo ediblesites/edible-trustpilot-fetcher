@@ -167,7 +167,7 @@ class Trustpilot_Admin {
                 </table>
                 
                 <p class="submit">
-                    <input type="submit" name="submit" id="submit" class="button button-primary" value="Add Business & Start Scraping">
+                    <input type="submit" name="submit" id="submit" class="button button-primary" value="Add Business">
                 </p>
             </form>
             
