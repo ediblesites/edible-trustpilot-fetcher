@@ -639,11 +639,11 @@ class Trustpilot_Business_Manager {
             $result = $business_manager->process_business_data($business_id);
             
             // Log result
-            error_log("Trustpilot Update Business Result for Business {$business_id}: " . json_encode($result));
+            Trustpilot_Utils::debug_log("Trustpilot Update Business Result for Business {$business_id}: " . json_encode($result));
             
             return $result;
         } catch (Exception $e) {
-            error_log("Trustpilot Update Business Error for Business {$business_id}: " . $e->getMessage());
+            Trustpilot_Utils::debug_log("Trustpilot Update Business Error for Business {$business_id}: " . $e->getMessage());
             throw $e; // Re-throw to trigger Action Scheduler retry
         }
     }
@@ -657,10 +657,10 @@ class Trustpilot_Business_Manager {
      * @return array Results of save operation
      */
     public static function save_single_review_job($business_id, $review_data, $index = null) {
-        error_log("Trustpilot Debug: Processing review job for business {$business_id}");
-        error_log("Trustpilot Debug: Job started at: " . date('Y-m-d H:i:s'));
+        Trustpilot_Utils::debug_log("Trustpilot Debug: Processing review job for business {$business_id}");
+        Trustpilot_Utils::debug_log("Trustpilot Debug: Job started at: " . date('Y-m-d H:i:s'));
         if ($index !== null) {
-            error_log("Trustpilot Debug: Processing review index: {$index}");
+            Trustpilot_Utils::debug_log("Trustpilot Debug: Processing review index: {$index}");
         }
         
         try {
@@ -668,18 +668,18 @@ class Trustpilot_Business_Manager {
             $result = $business_manager->save_single_review($business_id, $review_data);
             
             // Log result
-            error_log("Trustpilot Save Single Review Result for Business {$business_id}: " . json_encode($result));
+            Trustpilot_Utils::debug_log("Trustpilot Save Single Review Result for Business {$business_id}: " . json_encode($result));
             
             if ($result['success']) {
-                error_log("Trustpilot Debug: Review job completed successfully for business {$business_id}");
+                Trustpilot_Utils::debug_log("Trustpilot Debug: Review job completed successfully for business {$business_id}");
             } else {
-                error_log("Trustpilot Debug: Review job failed for business {$business_id}: " . $result['message']);
+                Trustpilot_Utils::debug_log("Trustpilot Debug: Review job failed for business {$business_id}: " . $result['message']);
             }
             
             return $result;
         } catch (Exception $e) {
-            error_log("Trustpilot Save Single Review Error for Business {$business_id}: " . $e->getMessage());
-            error_log("Trustpilot Debug: Exception trace: " . $e->getTraceAsString());
+            Trustpilot_Utils::debug_log("Trustpilot Save Single Review Error for Business {$business_id}: " . $e->getMessage());
+            Trustpilot_Utils::debug_log("Trustpilot Debug: Exception trace: " . $e->getTraceAsString());
             throw $e; // Re-throw to trigger Action Scheduler retry
         }
     }
@@ -746,7 +746,7 @@ class Trustpilot_Business_Manager {
                 $max_reviews = get_option('trustpilot_review_limit', 5);
                 $reviews_to_queue = array_slice($scraped_data['reviews'], 0, $max_reviews);
                 
-                error_log("Trustpilot Debug: Found " . count($scraped_data['reviews']) . " reviews, limiting to {$max_reviews} for business {$business_id}");
+                Trustpilot_Utils::debug_log("Trustpilot Debug: Found " . count($scraped_data['reviews']) . " reviews, limiting to {$max_reviews} for business {$business_id}");
                 
                 foreach ($reviews_to_queue as $index => $review) {
                     $hook = 'trustpilot_save_review_action';
@@ -760,9 +760,9 @@ class Trustpilot_Business_Manager {
                     }
                 }
                 
-                error_log("Trustpilot Debug: Successfully queued {$results['reviews_queued']} review jobs for business {$business_id}");
+                Trustpilot_Utils::debug_log("Trustpilot Debug: Successfully queued {$results['reviews_queued']} review jobs for business {$business_id}");
             } else {
-                error_log("Trustpilot Debug: No reviews found in scraped data for business {$business_id}");
+                Trustpilot_Utils::debug_log("Trustpilot Debug: No reviews found in scraped data for business {$business_id}");
             }
 
             $results['success'] = true;
@@ -794,11 +794,11 @@ class Trustpilot_Business_Manager {
 
         try {
             // Debug: Log what we received
-            error_log("Trustpilot Debug: save_single_review called with business_id: {$business_id}, review_data type: " . gettype($review_data));
+            Trustpilot_Utils::debug_log("Trustpilot Debug: save_single_review called with business_id: {$business_id}, review_data type: " . gettype($review_data));
             if (is_array($review_data)) {
-                error_log("Trustpilot Debug: review_data keys: " . implode(', ', array_keys($review_data)));
+                Trustpilot_Utils::debug_log("Trustpilot Debug: review_data keys: " . implode(', ', array_keys($review_data)));
             } else {
-                error_log("Trustpilot Debug: review_data value: " . var_export($review_data, true));
+                Trustpilot_Utils::debug_log("Trustpilot Debug: review_data value: " . var_export($review_data, true));
             }
 
             // Get the business post
@@ -890,11 +890,11 @@ class Trustpilot_Business_Manager {
             }
             
             if ($scheduled_count > 0) {
-                error_log("Trustpilot Scheduler: Scheduled {$scheduled_count} businesses for scraping with {$rate_limit_seconds}s intervals");
+                Trustpilot_Utils::debug_log("Trustpilot Scheduler: Scheduled {$scheduled_count} businesses for scraping with {$rate_limit_seconds}s intervals");
             }
             
         } catch (Exception $e) {
-            error_log("Trustpilot Scheduler Error: " . $e->getMessage());
+            Trustpilot_Utils::debug_log("Trustpilot Scheduler Error: " . $e->getMessage());
             // Don't re-throw - WordPress cron will retry in an hour anyway
         }
     }
