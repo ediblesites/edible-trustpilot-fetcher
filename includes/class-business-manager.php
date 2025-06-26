@@ -746,16 +746,11 @@ class Trustpilot_Business_Manager {
                 error_log("Trustpilot Debug: Found " . count($scraped_data['reviews']) . " reviews to queue for business {$business_id}");
                 
                 foreach ($scraped_data['reviews'] as $index => $review) {
-                    // Debug: Log the exact parameters being passed
                     $hook = 'trustpilot_save_review_action';
                     $args = array($business_id, $review);
-                    $group = 'trustpilot-scraping-' . $business_id . '-' . $index; // Make group unique
-                    $options = array(
-                        'retry_count' => 3,
-                        'retry_delay' => 300 // 5 minutes
-                    );
+                    $group = 'trustpilot-scraping';
                     
-                    $job_id = as_enqueue_async_action($hook, $args, $group, $options, false);
+                    $job_id = as_enqueue_async_action($hook, $args, $group, false, 10);
                     
                     if ($job_id) {
                         $results['reviews_queued']++;
@@ -872,15 +867,11 @@ class Trustpilot_Business_Manager {
                 
                 // Check if business is due for scraping
                 if (!$last_scraped || (time() - strtotime($last_scraped)) >= ($scraping_frequency_hours * HOUR_IN_SECONDS)) {
-                    as_enqueue_async_action(
-                        'trustpilot_update_business_action',
-                        array($business_id),
-                        'trustpilot-scraping',
-                        array(
-                            'retry_count' => 3,
-                            'retry_delay' => 300 // 5 minutes
-                        )
-                    );
+                    $hook = 'trustpilot_update_business_action';
+                    $args = array($business_id);
+                    $group = 'trustpilot-scraping';
+                    
+                    as_enqueue_async_action($hook, $args, $group, false, 10);
                     $scheduled_count++;
                 }
             }
