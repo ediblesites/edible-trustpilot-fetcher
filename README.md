@@ -32,7 +32,7 @@ This plugin helps you display Trustpilot reviews on your WordPress website by:
 
 This plugin supports automatic updates via the [Git Updater](https://github.com/afragen/git-updater) plugin:
 
-1. Install the [Git Updater](https://github.com/afragen/git-updater/releases/) plugin
+1. After installing the plugin as described above, install the [Git Updater](https://github.com/afragen/git-updater/releases/) plugin
 2. Activate it and click 'Activate Free License' (no license required)
 3. The plugin will automatically detect this repository and offer updates
 
