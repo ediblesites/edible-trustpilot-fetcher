@@ -119,6 +119,7 @@ class Trustpilot_Shortcodes {
 
         $rating = (float)$rating;
         $stars = '';
+        $has_half_star = false;
 
         // Full stars
         $full_stars = floor($rating);
@@ -130,13 +131,15 @@ class Trustpilot_Shortcodes {
         $remainder = $rating - $full_stars;
         if ($remainder >= 0.25 && $remainder < 0.75) {
             $stars .= '⯪';
+            $has_half_star = true;
         } elseif ($remainder >= 0.75) {
             $stars .= '★';
+            $full_stars++; // Count this as a full star for empty star calculation
         }
 
-        // Empty stars to fill up to 5
-        $total_stars = strlen($stars) / 3; // Unicode stars are 3 bytes each
-        $empty_stars = 5 - ceil($rating);
+        // Empty stars to fill up to 5 total
+        $filled_count = $full_stars + ($has_half_star ? 1 : 0);
+        $empty_stars = 5 - $filled_count;
         for ($i = 0; $i < $empty_stars; $i++) {
             $stars .= '☆';
         }
