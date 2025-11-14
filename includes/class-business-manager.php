@@ -771,10 +771,24 @@ class Trustpilot_Business_Manager {
             // Scrape data if not provided
             if ($scraped_data === null) {
                 $scraped_data = $this->scraper->scrape_business($business_url);
-                
+
                 if (is_wp_error($scraped_data)) {
+                    // Track failure
+                    $failures = (int) get_post_meta($business_id, '_scraper_consecutive_failures', true);
+                    update_post_meta($business_id, '_scraper_consecutive_failures', $failures + 1);
+                    update_post_meta($business_id, '_scraper_last_error', $scraped_data->get_error_message());
+
+                    // Alert on 3rd consecutive failure
+                    if ($failures + 1 >= 3) {
+                        Trustpilot_Utils::send_scraper_failure_alert($business_id);
+                    }
+
                     throw new Exception('Failed to scrape business: ' . $scraped_data->get_error_message());
                 }
+
+                // Reset on success
+                delete_post_meta($business_id, '_scraper_consecutive_failures');
+                delete_post_meta($business_id, '_scraper_last_error');
             }
 
             // Update business data
