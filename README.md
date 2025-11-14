@@ -17,7 +17,7 @@ This plugin helps you display Trustpilot reviews on your WordPress website by:
 
 - ✅ **Easy Setup** - Just add a Trustpilot URL and the plugin does the rest
 - ✅ **Automatic Updates** - Reviews are refreshed automatically
-- ✅ **Customizable** - Control how many reviews to import and how often to update
+- ✅ **Customizable** - Control update frequency and rate limiting
 - ✅ **Safe & Respectful** - Built-in delays to avoid overwhelming Trustpilot
 - ✅ **Admin Dashboard** - Manage everything from WordPress admin
 
@@ -54,10 +54,11 @@ That's it! The plugin will automatically:
 
 Go to **Trustpilot Review Fetcher > Settings** to configure:
 
-- **Maximum Reviews per Fetch** - How many of the most recent reviews to fetch every time (default: 5)
-- **Scraping Frequency** - How often to check for new reviews (default: 24 hours)
-- **Rate Limit** - How fast to make requests (default: 5 seconds)
+- **Scraping Frequency** - How often to check for new reviews (default: 72 hours)
+- **Rate Limit** - Delay between scraping multiple businesses (default: 5 seconds)
 - **Debug Mode** - Enable detailed logging for troubleshooting
+
+The plugin fetches the ~20 most recent reviews from each business (Trustpilot page 1). Duplicate reviews are automatically skipped.
 
 ## What Gets Created
 
