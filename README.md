@@ -2,7 +2,7 @@
 
 A WordPress plugin that automatically imports Trustpilot reviews to your WordPress site.
 
-## Version: 1.0.11
+## Version: 1.0.12
 
 ## What It Does
 
