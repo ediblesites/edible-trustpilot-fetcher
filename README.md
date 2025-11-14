@@ -68,6 +68,46 @@ When you add a business, the plugin creates:
 - **Review Posts** - Individual posts for each review with rating, author, and content
 - **Automatic Linking** - Reviews are automatically connected to their business
 
+## Displaying Trustpilot Stats
+
+Use the `[trustpilot_stats]` shortcode to display business ratings and review counts anywhere on your site.
+
+### Shortcode Usage
+
+The shortcode supports three output types:
+
+```
+[trustpilot_stats slug="faxonline" type="rating"]  // Outputs: 4.7
+[trustpilot_stats slug="payperfax" type="count"]   // Outputs: 1,234
+[trustpilot_stats slug="microsoft" type="stars"]   // Outputs: ★★★★⯪ (in Trustpilot green)
+```
+
+**Parameters:**
+- `slug` - Business slug (derived from domain: `payperfax.com` → `payperfax`, `faxonline.app` → `faxonline`)
+- `type` - Output type: `rating` (numeric), `count` (review count), or `stars` (star characters)
+
+### Using in WordPress Loops
+
+When displaying business posts in a loop, the `slug` parameter is optional:
+
+```php
+<?php
+$businesses = get_posts(array('post_type' => 'tp_businesses'));
+foreach ($businesses as $post) {
+    setup_postdata($post);
+    ?>
+    <h2><?php the_title(); ?></h2>
+    <p>Rating: <?php echo do_shortcode('[trustpilot_stats type="rating"]'); ?></p>
+    <p><?php echo do_shortcode('[trustpilot_stats type="stars"]'); ?></p>
+    <p><?php echo do_shortcode('[trustpilot_stats type="count"]'); ?> reviews</p>
+    <?php
+}
+wp_reset_postdata();
+?>
+```
+
+The shortcode automatically detects the current business post and uses its data.
+
 ## Automatic Review Updates
 
 The plugin automatically checks for new reviews based on your frequency setting. You don't need to do anything - it runs in the background using WordPress's built-in scheduling system.

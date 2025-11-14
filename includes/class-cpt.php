@@ -210,6 +210,14 @@ class Trustpilot_CPT {
             'single' => true,
             'show_in_rest' => true
         ));
+
+        // business_slug - Clean slug extracted from Trustpilot URL
+        register_meta('post', 'business_slug', array(
+            'type' => 'string',
+            'description' => 'Clean business slug extracted from Trustpilot URL (e.g., "microsoft" from "www.microsoft.com")',
+            'single' => true,
+            'show_in_rest' => true
+        ));
     }
 
     /**

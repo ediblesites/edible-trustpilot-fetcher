@@ -13,19 +13,22 @@ class Trustpilot_Init {
     public static function init() {
         // Initialize post types
         add_action('init', array('Trustpilot_CPT', 'register_post_types'));
-        
+
         // Initialize admin interface
         if (is_admin()) {
             new Trustpilot_Admin();
         }
-        
+
         // Initialize API endpoints
         Trustpilot_API::init();
-        
+
+        // Register shortcodes
+        add_action('init', array('Trustpilot_Shortcodes', 'register_shortcodes'));
+
         // Set up Action Scheduler hooks for business scraping
         add_action('trustpilot_update_business_action', array('Trustpilot_Business_Manager', 'update_business_job'), 10, 1);
         add_action('trustpilot_save_review_action', array('Trustpilot_Business_Manager', 'save_single_review_job'), 10, 2);
-        
+
         // Set up WordPress cron for scheduler
         add_action('trustpilot_scheduler_wakeup', array('Trustpilot_Business_Manager', 'check_and_schedule_due_businesses'));
     }

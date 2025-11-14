@@ -51,6 +51,7 @@ require_once EDIBLE_TP_PLUGIN_PATH . 'includes/class-scraper.php';
 require_once EDIBLE_TP_PLUGIN_PATH . 'includes/class-admin.php';
 require_once EDIBLE_TP_PLUGIN_PATH . 'includes/class-business-manager.php';
 require_once EDIBLE_TP_PLUGIN_PATH . 'includes/class-api.php';
+require_once EDIBLE_TP_PLUGIN_PATH . 'includes/class-shortcodes.php';
 require_once EDIBLE_TP_PLUGIN_PATH . 'includes/class-init.php';
 
 // Plugin activation/deactivation hooks

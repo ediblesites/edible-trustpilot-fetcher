@@ -17,7 +17,7 @@ class Trustpilot_Business_Manager {
 
     /**
      * Extract business domain from Trustpilot URL
-     * 
+     *
      * @param string $trustpilot_url Trustpilot URL
      * @return string Business domain
      */
@@ -25,6 +25,30 @@ class Trustpilot_Business_Manager {
         $parsed_url = parse_url($trustpilot_url);
         $path_parts = explode('/', trim($parsed_url['path'] ?? '', '/'));
         return $path_parts[1] ?? '';
+    }
+
+    /**
+     * Extract clean business slug from Trustpilot URL
+     * Removes www. prefix and TLD suffix
+     *
+     * @param string $trustpilot_url Trustpilot URL
+     * @return string Business slug (e.g., "faxonline" from "faxonline.app")
+     */
+    public function extract_business_slug($trustpilot_url) {
+        // First get the domain
+        $domain = $this->extract_business_domain($trustpilot_url);
+
+        if (empty($domain)) {
+            return '';
+        }
+
+        // Remove www. prefix
+        $slug = preg_replace('/^www\./', '', $domain);
+
+        // Remove TLD suffix (everything after the last dot)
+        $slug = preg_replace('/\.[^.]+$/', '', $slug);
+
+        return $slug;
     }
 
     /**
@@ -172,7 +196,7 @@ class Trustpilot_Business_Manager {
 
     /**
      * Find business by Trustpilot URL
-     * 
+     *
      * @param string $trustpilot_url Trustpilot URL
      * @return WP_Post|null Business post or null if not found
      */
@@ -183,6 +207,29 @@ class Trustpilot_Business_Manager {
                 array(
                     'key' => 'business_url',
                     'value' => $trustpilot_url,
+                    'compare' => '='
+                )
+            ),
+            'post_status' => 'any',
+            'numberposts' => 1
+        ));
+
+        return !empty($existing) ? $existing[0] : null;
+    }
+
+    /**
+     * Find business by slug
+     *
+     * @param string $slug Business slug (e.g., "microsoft")
+     * @return WP_Post|null Business post or null if not found
+     */
+    public function find_business_by_slug($slug) {
+        $existing = get_posts(array(
+            'post_type' => 'tp_businesses',
+            'meta_query' => array(
+                array(
+                    'key' => 'business_slug',
+                    'value' => $slug,
                     'compare' => '='
                 )
             ),
@@ -226,8 +273,12 @@ class Trustpilot_Business_Manager {
             return $post_id;
         }
 
-        // Save business URL and update with scraped data
+        // Save business URL and slug
         update_post_meta($post_id, 'business_url', $trustpilot_url);
+        $business_slug = $this->extract_business_slug($trustpilot_url);
+        update_post_meta($post_id, 'business_slug', $business_slug);
+
+        // Update with scraped data
         $this->update_business_data($post_id, $scrape_result);
 
         return $post_id;
@@ -393,7 +444,7 @@ class Trustpilot_Business_Manager {
 
     /**
      * Update business data in WordPress
-     * 
+     *
      * @param int $business_id WordPress post ID
      * @param array $business_data Scraped business data
      * @return bool Success status
@@ -407,6 +458,13 @@ class Trustpilot_Business_Manager {
         update_post_meta($business_id, 'aggregate_rating', $business_data['aggregate_rating']);
         update_post_meta($business_id, 'total_reviews', $business_data['total_reviews']);
         update_post_meta($business_id, 'last_scraped', $business_data['last_scraped']);
+
+        // Update business_slug from business_url
+        $business_url = get_post_meta($business_id, 'business_url', true);
+        if ($business_url) {
+            $business_slug = $this->extract_business_slug($business_url);
+            update_post_meta($business_id, 'business_slug', $business_slug);
+        }
 
         return true;
     }
