@@ -282,7 +282,7 @@ class Trustpilot_Scraper {
                     if (isset($obj['@type']) && $obj['@type'] === 'Review') {
                         $review = array(
                             'review_id' => $obj['@id'] ?? uniqid('review_'),
-                            'title' => $obj['name'] ?? '',
+                            'title' => $obj['headline'] ?? '',
                             'content' => $obj['reviewBody'] ?? '',
                             'rating' => isset($obj['reviewRating']) ? intval($obj['reviewRating']['ratingValue']) : 0,
                             'author' => isset($obj['author']) ? $obj['author']['name'] : '',
@@ -300,7 +300,7 @@ class Trustpilot_Scraper {
             if (isset($data['@type']) && $data['@type'] === 'Review') {
                 $review = array(
                     'review_id' => $data['@id'] ?? uniqid('review_'),
-                    'title' => $data['name'] ?? '',
+                    'title' => $data['headline'] ?? '',
                     'content' => $data['reviewBody'] ?? '',
                     'rating' => isset($data['reviewRating']) ? intval($data['reviewRating']['ratingValue']) : 0,
                     'author' => isset($data['author']) ? $data['author']['name'] : '',
